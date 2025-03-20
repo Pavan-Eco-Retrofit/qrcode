@@ -28,12 +28,21 @@
         }
         img {
             margin-top: 20px;
+            width: 200px;
+            height: 200px;
+        }
+        .error {
+            color: red;
         }
     </style>
 </head>
 <body>
 
     <h2>QR Code Shortener</h2>
+
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
 
     <form method="POST">
         <input type="text" name="property_name" placeholder="Enter Property Name" required>
@@ -42,7 +51,7 @@
     </form>
 
     {% if short_url %}
-        <h3>Short URL: <a href="http://localhost:5000/{{ short_url }}" target="_blank">localhost:5000/{{ short_url }}</a></h3>
+        <h3>Short URL: <a href="{{ public_url }}{{ short_url }}" target="_blank">{{ public_url }}{{ short_url }}</a></h3>
         <h3>QR Code:</h3>
         <img src="{{ qr_code_path }}" alt="QR Code">
     {% endif %}
