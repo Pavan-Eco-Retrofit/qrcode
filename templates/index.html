@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Shortener</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input {
+            padding: 10px;
+            margin: 5px;
+            width: 80%;
+            max-width: 400px;
+        }
+        button {
+            padding: 10px;
+            background-color: blue;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        img {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>QR Code Shortener</h2>
+
+    <form method="POST">
+        <input type="text" name="property_name" placeholder="Enter Property Name" required>
+        <input type="url" name="destination_url" placeholder="Enter Destination URL" required>
+        <button type="submit">Generate QR Code</button>
+    </form>
+
+    {% if short_url %}
+        <h3>Short URL: <a href="http://localhost:5000/{{ short_url }}" target="_blank">localhost:5000/{{ short_url }}</a></h3>
+        <h3>QR Code:</h3>
+        <img src="{{ qr_code_path }}" alt="QR Code">
+    {% endif %}
+
+</body>
+</html>
