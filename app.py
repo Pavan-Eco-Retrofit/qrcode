@@ -184,7 +184,7 @@ app = Flask(__name__)
 
 # 🔹 Secure GitHub Configuration (Using Environment Variables)
 GITHUB_USERNAME = "Pavan-Eco-Retrofit"
-GITHUB_TOKEN =   "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" # Get token from Render environment variables
+GITHUB_TOKEN =   "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" # Get token from Render environment variables
 GIT_REPO = f"https://{GITHUB_USERNAME}:{GITHUB_TOKEN}@github.com/Pavan-Eco-Retrofit/json_saving.git"
 
 DATA_DIR = "data"
