@@ -181,27 +181,37 @@ import os
 import subprocess
 
 app = Flask(__name__)
-GIT_REPO = "https://github.com/Pavan-Eco-Retrofit/json_saving.git"
-DATA_FILE = "data/short_links.json"
+
+# GitHub Configuration (Use Render Environment Variables)
+GITHUB_USERNAME = "Pavan-Eco-Retrofit"
+GITHUB_TOKEN = "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"
+GIT_REPO = f"https://{GITHUB_USERNAME}:{GITHUB_TOKEN}@github.com/Pavan-Eco-Retrofit/json_saving.git"
+
+DATA_DIR = "data"
+DATA_FILE = f"{DATA_DIR}/short_links.json"
 PUBLIC_URL = "https://qrcode-fw9c.onrender.com/"
 
-# Ensure data directory exists
-os.makedirs("data", exist_ok=True)
+# Ensure Data Directory Exists
+os.makedirs(DATA_DIR, exist_ok=True)
 
-# Pull the latest data from GitHub
+# 🔹 Pull latest data from GitHub
 def pull_data_from_git():
-    if not os.path.exists("data/.git"):
-        subprocess.run(["git", "clone", GIT_REPO, "data"])
+    if not os.path.exists(f"{DATA_DIR}/.git"):
+        subprocess.run(["git", "clone", GIT_REPO, DATA_DIR], check=True)
     else:
-        subprocess.run(["git", "-C", "data", "pull"])
+        subprocess.run(["git", "-C", DATA_DIR, "fetch"], check=True)
+        subprocess.run(["git", "-C", DATA_DIR, "reset", "--hard", "origin/main"], check=True)
 
-# Save data and push to GitHub
+# 🔹 Push new data to GitHub
 def push_data_to_git():
-    subprocess.run(["git", "-C", "data", "add", "short_links.json"])
-    subprocess.run(["git", "-C", "data", "commit", "-m", "Update short links"])
-    subprocess.run(["git", "-C", "data", "push"])
+    try:
+        subprocess.run(["git", "-C", DATA_DIR, "add", "short_links.json"], check=True)
+        subprocess.run(["git", "-C", DATA_DIR, "commit", "-m", "Update short links"], check=True)
+        subprocess.run(["git", "-C", DATA_DIR, "push", "origin", "main"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Git Push Error: {e}")
 
-# Load Data
+# 🔹 Load Short Links Data from JSON
 def load_data():
     pull_data_from_git()
     if os.path.exists(DATA_FILE):
@@ -212,23 +222,24 @@ def load_data():
             return {}
     return {}
 
-# Save Data
+# 🔹 Save Data to JSON & Push to GitHub
 def save_data(data):
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=4)
     push_data_to_git()
 
-# Generate Short URL
+# 🔹 Generate Short URL
 def generate_short_url(property_name):
     return hashlib.md5(property_name.encode()).hexdigest()[:6]
 
-# Generate QR Code as Base64
+# 🔹 Generate QR Code in Base64 (No File Storage)
 def generate_qr_code_base64(short_url):
     qr = pyqrcode.create(f"{PUBLIC_URL}{short_url}")
     buffer = io.BytesIO()
     qr.png(buffer, scale=6)
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
+# 🔹 Homepage - Create Short URL & QR Code
 @app.route("/", methods=["GET", "POST"])
 def index():
     data = load_data()
@@ -257,6 +268,7 @@ def index():
 
     return render_template("index.html")
 
+# 🔹 Redirect to Original URL
 @app.route("/<short_url>")
 def redirect_url(short_url):
     data = load_data()
