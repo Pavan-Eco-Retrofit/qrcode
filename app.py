@@ -185,7 +185,7 @@ app = Flask(__name__)
 # GitHub Configuration (Use Render Environment Variables)
 GITHUB_USERNAME = "Pavan-Eco-Retrofit"
 GITHUB_TOKEN = "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"
-GIT_REPO = f"https://{GITHUB_USERNAME}:{GITHUB_TOKEN}@github.com/Pavan-Eco-Retrofit/json_saving.git"
+GIT_REPO = f"https://{GITHUB_USERNAME}:{GITHUB_TOKEN}@github.com/Pavan-Eco-Retrofit/json_saving"
 
 DATA_DIR = "data"
 DATA_FILE = f"{DATA_DIR}/short_links.json"
