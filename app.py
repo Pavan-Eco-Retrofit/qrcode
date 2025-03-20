@@ -26,15 +26,17 @@ def save_data(data):
 def generate_short_url(property_name):
     return hashlib.md5(property_name.encode()).hexdigest()[:6]
 
-# Create QR code only if it doesn't exist
+PUBLIC_URL = "https://qrcode-fw9c.onrender.com/"  # Replace with your actual Render URL
+
 def generate_qr_code(short_url):
     qr_path = f"static/qrcodes/{short_url}.png"
     if not os.path.exists("static/qrcodes"):
         os.makedirs("static/qrcodes")
-    if not os.path.exists(qr_path):  # Only generate if QR code doesn't exist
-        qr = pyqrcode.create(f"http://localhost:5000/{short_url}")
+    if not os.path.exists(qr_path):
+        qr = pyqrcode.create(f"{PUBLIC_URL}{short_url}")
         qr.png(qr_path, scale=6)
     return qr_path
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
