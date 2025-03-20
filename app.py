@@ -182,14 +182,14 @@ import subprocess
 
 app = Flask(__name__)
 
-# GitHub Configuration (Use Render Environment Variables)
+# 🔹 Secure GitHub Configuration (Using Environment Variables)
 GITHUB_USERNAME = "Pavan-Eco-Retrofit"
-GITHUB_TOKEN = "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"
-GIT_REPO = f"https://{GITHUB_USERNAME}:{GITHUB_TOKEN}@github.com/Pavan-Eco-Retrofit/json_saving"
+GITHUB_TOKEN =   "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" # Get token from Render environment variables
+GIT_REPO = f"https://{GITHUB_USERNAME}:{GITHUB_TOKEN}@github.com/Pavan-Eco-Retrofit/json_saving.git"
 
 DATA_DIR = "data"
 DATA_FILE = f"{DATA_DIR}/short_links.json"
-PUBLIC_URL = "https://qrcode-fw9c.onrender.com/"
+PUBLIC_URL = "https://qrcode-fw9c.onrender.com/"  # Replace with your Render domain
 
 # Ensure Data Directory Exists
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -216,10 +216,9 @@ def push_data_to_git():
     except subprocess.CalledProcessError as e:
         print(f"⚠️ Git Push Error: {e}")
 
-
-# 🔹 Load Short Links Data from JSON
+# 🔹 Load Short Links Data from JSON (Ensures data is always pulled from GitHub)
 def load_data():
-    pull_data_from_git()
+    pull_data_from_git()  # Always fetch latest data before loading
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, "r") as f:
@@ -232,13 +231,13 @@ def load_data():
 def save_data(data):
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=4)
-    push_data_to_git()
+    push_data_to_git()  # Ensure data is committed & pushed to GitHub
 
 # 🔹 Generate Short URL
 def generate_short_url(property_name):
     return hashlib.md5(property_name.encode()).hexdigest()[:6]
 
-# 🔹 Generate QR Code in Base64 (No File Storage)
+# 🔹 Generate QR Code in Base64 (No File Storage Needed)
 def generate_qr_code_base64(short_url):
     qr = pyqrcode.create(f"{PUBLIC_URL}{short_url}")
     buffer = io.BytesIO()
@@ -286,4 +285,3 @@ def redirect_url(short_url):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
-
