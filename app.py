@@ -205,11 +205,17 @@ def pull_data_from_git():
 # 🔹 Push new data to GitHub
 def push_data_to_git():
     try:
+        # Set Git user identity
+        subprocess.run(["git", "-C", DATA_DIR, "config", "user.email", "pavan.banavasi@designspecifics.co.uk"], check=True)
+        subprocess.run(["git", "-C", DATA_DIR, "config", "user.name", "Pavan-Eco-Retrofit"], check=True)
+
+        # Add and commit changes
         subprocess.run(["git", "-C", DATA_DIR, "add", "short_links.json"], check=True)
         subprocess.run(["git", "-C", DATA_DIR, "commit", "-m", "Update short links"], check=True)
         subprocess.run(["git", "-C", DATA_DIR, "push", "origin", "main"], check=True)
     except subprocess.CalledProcessError as e:
         print(f"⚠️ Git Push Error: {e}")
+
 
 # 🔹 Load Short Links Data from JSON
 def load_data():
