@@ -1,62 +1,70 @@
-from flask import Flask, request, jsonify, render_template, redirect
+from flask import Flask, request, render_template, redirect, jsonify
+import os
 import json
 import hashlib
 import pyqrcode
-import os
+import shutil
 
 app = Flask(__name__)
-DATA_FILE = 'short_links.json'
+DATA_FILE = 'data/short_links.json'
+QR_DIR = "static/qrcodes"
+PUBLIC_URL = "https://qrcode-fw9c.onrender.com/"  # Change this to your actual Render domain
 
-# Load existing data or create new
+# Ensure required directories exist
+os.makedirs("data", exist_ok=True)
+os.makedirs(QR_DIR, exist_ok=True)
+
+# Load data from JSON file (Persistent Storage Alternative: Use a Database)
 def load_data():
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, 'r') as f:
-                data = json.load(f)
-                return data
+                return json.load(f)
         except json.JSONDecodeError:
-            return {}  # Return an empty dictionary if the file is corrupted
+            return {}  # If file is corrupted, return empty dict
     return {}
 
 def save_data(data):
     with open(DATA_FILE, 'w') as f:
         json.dump(data, f, indent=4)
 
-# Generate short URL based on property name
+# Generate a short URL using a hash function
 def generate_short_url(property_name):
     return hashlib.md5(property_name.encode()).hexdigest()[:6]
 
-PUBLIC_URL = "https://qrcode-fw9c.onrender.com/"  # Replace with your actual Render URL
-
+# Generate QR Code
 def generate_qr_code(short_url):
-    qr_path = f"static/qrcodes/{short_url}.png"
-    if not os.path.exists("static/qrcodes"):
-        os.makedirs("static/qrcodes")
+    qr_path = os.path.join(QR_DIR, f"{short_url}.png")
+    
+    # Create QR code only if it doesn't exist
     if not os.path.exists(qr_path):
         qr = pyqrcode.create(f"{PUBLIC_URL}{short_url}")
         qr.png(qr_path, scale=6)
+    
     return qr_path
-
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     data = load_data()
     
     if request.method == 'POST':
-        property_name = request.form['property_name']
-        destination_url = request.form['destination_url']
+        property_name = request.form.get('property_name')
+        destination_url = request.form.get('destination_url')
         
+        if not property_name or not destination_url:
+            return render_template("index.html", error="Both fields are required!")
+
         if property_name in data:
             short_url = data[property_name]['short_url']
-            data[property_name]['destination_url'] = destination_url  # Update only destination
+            data[property_name]['destination_url'] = destination_url  # Update existing link
         else:
             short_url = generate_short_url(property_name)
             data[property_name] = {'short_url': short_url, 'destination_url': destination_url}
         
         save_data(data)
-        qr_code_path = generate_qr_code(short_url)  # Reuse the existing QR code
+        qr_code_path = generate_qr_code(short_url)
         
-        return render_template("index.html", short_url=short_url, qr_code_path=qr_code_path)
+        return render_template("index.html", short_url=short_url, qr_code_path=qr_code_path, public_url=PUBLIC_URL)
     
     return render_template("index.html")
 
@@ -64,13 +72,12 @@ def index():
 def redirect_url(short_url):
     data = load_data()
     
-    for property_name, details in data.items():
+    for details in data.values():
         if details['short_url'] == short_url:
             return redirect(details['destination_url'])
     
     return "Short URL not found", 404
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))  # Use Render's PORT or fallback to 5000
+    port = int(os.environ.get("PORT", 5000))  # Use Render-assigned PORT
     app.run(host="0.0.0.0", port=port, debug=True)
-
