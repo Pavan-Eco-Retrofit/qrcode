@@ -84,6 +84,7 @@ if __name__ == '__main__':
     app.run(host="0.0.0.0", port=port, debug=True)
 """
 
+"""
 from flask import Flask, request, render_template, redirect
 import json
 import hashlib
@@ -168,3 +169,103 @@ def redirect_url(short_url):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
+"""
+
+from flask import Flask, request, render_template, redirect
+import json
+import hashlib
+import pyqrcode
+import base64
+import io
+import os
+import subprocess
+
+app = Flask(__name__)
+GIT_REPO = "https://github.com/Pavan-Eco-Retrofit/json_saving.git"
+DATA_FILE = "data/short_links.json"
+PUBLIC_URL = "https://qrcode-fw9c.onrender.com/"
+
+# Ensure data directory exists
+os.makedirs("data", exist_ok=True)
+
+# Pull the latest data from GitHub
+def pull_data_from_git():
+    if not os.path.exists("data/.git"):
+        subprocess.run(["git", "clone", GIT_REPO, "data"])
+    else:
+        subprocess.run(["git", "-C", "data", "pull"])
+
+# Save data and push to GitHub
+def push_data_to_git():
+    subprocess.run(["git", "-C", "data", "add", "short_links.json"])
+    subprocess.run(["git", "-C", "data", "commit", "-m", "Update short links"])
+    subprocess.run(["git", "-C", "data", "push"])
+
+# Load Data
+def load_data():
+    pull_data_from_git()
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, "r") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+# Save Data
+def save_data(data):
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+    push_data_to_git()
+
+# Generate Short URL
+def generate_short_url(property_name):
+    return hashlib.md5(property_name.encode()).hexdigest()[:6]
+
+# Generate QR Code as Base64
+def generate_qr_code_base64(short_url):
+    qr = pyqrcode.create(f"{PUBLIC_URL}{short_url}")
+    buffer = io.BytesIO()
+    qr.png(buffer, scale=6)
+    return base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    data = load_data()
+
+    if request.method == "POST":
+        property_name = request.form.get("property_name")
+        destination_url = request.form.get("destination_url")
+
+        if not property_name or not destination_url:
+            return render_template("index.html", error="Both fields are required!")
+
+        if property_name in data:
+            short_url = data[property_name]["short_url"]
+            data[property_name]["destination_url"] = destination_url
+        else:
+            short_url = generate_short_url(property_name)
+            qr_code_base64 = generate_qr_code_base64(short_url)
+            data[property_name] = {
+                "short_url": short_url,
+                "destination_url": destination_url,
+                "qr_code_base64": qr_code_base64
+            }
+
+        save_data(data)
+        return render_template("index.html", short_url=short_url, qr_code_base64=data[property_name]["qr_code_base64"], public_url=PUBLIC_URL)
+
+    return render_template("index.html")
+
+@app.route("/<short_url>")
+def redirect_url(short_url):
+    data = load_data()
+    for details in data.values():
+        if details["short_url"] == short_url:
+            return redirect(details["destination_url"])
+    return "Short URL not found", 404
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
+
